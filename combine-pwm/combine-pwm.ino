@@ -19,7 +19,6 @@ void setup() {
   // put your setup code here, to run once:
   FTM0_SC = 0;
   FTM0_MOD = 1200;
-  FTM0_SC = FTM_SC_CLKS(1) | 0;
 
   //FTM0_SC |= FTM_SC_TOIE;
   //NVIC_ENABLE_IRQ(IRQ_FTM0);
@@ -34,6 +33,9 @@ void setup() {
   FTM0_C1SC = FTM_CSC_MSB | FTM_CSC_ELSB;
   FTM0_C1V = 800;
   CORE_PIN23_CONFIG = PORT_PCR_MUX(4) | PORT_PCR_DSE | PORT_PCR_SRE;
+
+  // Apparently this needs to be at the end for COMBINE!!!
+  FTM0_SC = FTM_SC_CLKS(1) | 0;
 }
 
 void loop() {
