@@ -42,7 +42,7 @@ def svpwm(theta):
 	if vector_order[2]:
 		coeffs = (coeffs[1], coeffs[0])
 
-	return (theta, sextant, sextant_theta, coeffs)
+	return (theta, sextant, sextant_theta, coeffs, vector_order[0], vector_order[1])
 
 # for theta in numpy.linspace(0, math.pi / 3, num=100, endpoint=False):
 # 	print(theta, vector_coefficients(theta))
