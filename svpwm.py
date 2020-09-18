@@ -50,11 +50,7 @@ def svpwm(theta, period, duty):
 		coeffs = (coeffs[1], coeffs[0])
 
 	first_vector = vector_order[0]
-	second_vector = (
-		vector_order[1][0],
-		vector_order[1][1],
-		vector_order[1][2]
-	)
+	second_vector = vector_order[1]
 
 	on_time = period * duty
 	off_time = period - on_time
@@ -69,8 +65,29 @@ def svpwm(theta, period, duty):
 
 	return on_times
 
-# for theta in numpy.linspace(0, math.pi / 3, num=100, endpoint=False):
-# 	print(theta, vector_coefficients(theta))
+def svpwm_2(theta):
+	third_sector_total = int(theta / (2 * math.pi / 3))
+	third_sector = third_sector_total % 3
+	third_sector_theta = theta - third_sector_total * (2 * math.pi / 3)
+
+	x = math.cos(third_sector_theta)
+	y = math.sin(third_sector_theta)
+
+	sqrt3 = math.sqrt(3)
+
+	a = (1 / sqrt3) * y + x
+	b = (2 / sqrt3) * y
+
+	a_scaled = a / max_sum
+	b_scaled = b / max_sum
+
+	if third_sector == 0:
+		return (a_scaled, b_scaled, 0.0)
+	elif third_sector == 1:
+		return (0.0, b_scaled, a_scaled)
+	else:
+		return (b_scaled, 0.0, a_scaled)
 
 for theta in numpy.linspace(0, 2 * math.pi, num=100, endpoint=False):
-	print(theta, svpwm(theta, 1, 1))
+	print(svpwm(theta, 1, 1))
+	print(svpwm_2(theta))
