@@ -86,6 +86,7 @@ def svpwm_2(theta):
 	elif third_sector == 1:
 		return (0.0, b_scaled, a_scaled)
 	else:
+		# third_sector == 3
 		return (b_scaled, 0.0, a_scaled)
 
 for theta in numpy.linspace(0, 2 * math.pi, num=100, endpoint=False):
