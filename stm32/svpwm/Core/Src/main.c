@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +44,11 @@ TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
 
+static const float S_2_PI_3 = 2.0f * M_PI / 3.0f;
+static const float S_1_SQRT3 = 1.0f / sqrtf(3.0f);
+static const float S_2_SQRT3 = 2.0f / sqrtf(3.0f);
+static const float SCALE_TO_ONE = 1.0f / (1.0f / (2.0f * sqrtf(3.0f)) + sqrtf(3.0f) / 2.0f);
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -56,6 +61,42 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+float theta = 0.0f;
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
+	float third_sector = floorf(theta / S_2_PI_3);
+	float third_sector_theta = theta - third_sector * S_2_PI_3;
+
+	float x = cosf(third_sector_theta);
+	float y = sinf(third_sector_theta);
+
+	float a = SCALE_TO_ONE * (S_1_SQRT3 * y + x);
+	float b = SCALE_TO_ONE * (S_2_SQRT3 * y);
+
+	int a_time = a * 1000.0f;
+	int b_time = b * 1000.0f;
+
+	if (third_sector == 0) {
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, a_time);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, b_time);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
+	} else if (third_sector == 1) {
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, b_time);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time);
+	} else { // third_sector == 2
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, b_time);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time);
+	}
+
+	theta += 0.01f;
+
+	if (theta >= 2.0f * M_PI) {
+		theta -= 2.0f * M_PI;
+	}
+}
 
 /* USER CODE END 0 */
 
@@ -89,6 +130,8 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start_IT(&htim1);
+
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 
@@ -104,7 +147,6 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
