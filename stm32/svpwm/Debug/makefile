@@ -24,24 +24,24 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-blink_01.elf \
+svpwm.elf \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-blink_01.list \
+svpwm.list \
 
 OBJCOPY_BIN += \
-blink_01.bin \
+svpwm.bin \
 
 
 # All Target
-all: blink_01.elf secondary-outputs
+all: svpwm.elf secondary-outputs
 
 # Tool invocations
-blink_01.elf: $(OBJS) $(USER_OBJS) /home/skimberk/Documents/motor-control/stm32/blink_01/STM32F103C8TX_FLASH.ld
-	arm-none-eabi-gcc -o "blink_01.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"/home/skimberk/Documents/motor-control/stm32/blink_01/STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="blink_01.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+svpwm.elf: $(OBJS) $(USER_OBJS) /home/skimberk/Documents/motor-control/stm32/svpwm/STM32F103C8TX_FLASH.ld
+	arm-none-eabi-gcc -o "svpwm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"/home/skimberk/Documents/motor-control/stm32/svpwm/STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="svpwm.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -50,13 +50,13 @@ default.size.stdout: $(EXECUTABLES)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-blink_01.list: $(EXECUTABLES)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "blink_01.list"
+svpwm.list: $(EXECUTABLES)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "svpwm.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-blink_01.bin: $(EXECUTABLES)
-	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "blink_01.bin"
+svpwm.bin: $(EXECUTABLES)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "svpwm.bin"
 	@echo 'Finished building: $@'
 	@echo ' '
 
