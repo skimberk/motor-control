@@ -6,7 +6,7 @@ MAX_PWM = 2000
 # 128 corresponds to ~ 500Hz, which is what many ESC's use nowadays.
 THROTTLE_INTERVAL = 128
 # 4 corresponds to 64/4 = 16kHz
-CONTROLLER_INTERVAL = 4
+CONTROLLER_INTERVAL = 1
 # slow loop interval for PID updates, 64kHz / 64 = 1kHz
 SLOW_INTERVAL = 64
 

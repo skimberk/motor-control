@@ -36,6 +36,7 @@ class SVPWMController(object):
 		self.pulsec = 0
 
 		self.estimated_bemfa = 0
+		self.estimated_ia = 0
 
 		# self.multiplier = 1.0
 
@@ -47,9 +48,9 @@ class SVPWMController(object):
 		ib = variables['ib']
 		ic = variables['ic']
 
-		v *= 1
+		v *= 0.5
 
-		period = 100
+		period = 20
 		percent_on = 0.5
 		timer = epoch % period
 
@@ -78,9 +79,8 @@ class SVPWMController(object):
 		if self.pulsec <= timer:
 			self.vc = -v
 
-		# if self.pulsea == 0 or (timer >= period / 8 and (timer < self.pulsea or timer >= self.pulsea + period / 8)):
-		if self.pulsea == 0 or timer >= self.pulsea + period / 10:
-			self.estimated_bemfa = self.va - ia - 14
+		if timer == period - 1 and self.pulsea < period - 1:
+			self.estimated_bemfa = self.va - ia - 12
 		else:
 			self.estimated_bemfa = 0
 
