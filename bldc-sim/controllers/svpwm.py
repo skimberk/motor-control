@@ -36,9 +36,6 @@ class SVPWMController(object):
 		self.pulsec = 0
 
 		self.estimated_bemfa = 0
-		self.estimated_bemfb = 0
-
-		self.bemfb = 0
 
 		# self.multiplier = 1.0
 
@@ -87,20 +84,13 @@ class SVPWMController(object):
 		else:
 			self.estimated_bemfa = 0
 
-		if self.pulseb == 0 or timer >= self.pulseb + period / 10:
-			self.estimated_bemfb = self.vb - ib - 14
-		else:
-			self.estimated_bemfb = 0
-
-		self.bemfb = variables['bemfb']
-
 		return self.va, self.vb, self.vc
 
 	def get_variables(self):
 		return [0, 0, 0, 0, self.estimated_bemfa, 0]
 
 	def get_errors(self):
-		return [self.bemfb, self.estimated_bemfb]
+		return [0, 0]
 
 def make_controller():
 	return SVPWMController()
