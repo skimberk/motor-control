@@ -81,14 +81,16 @@ def svpwm_2(theta):
 	a_scaled = a / max_sum
 	b_scaled = b / max_sum
 
+	print(third_sector, third_sector_theta)
+
 	if third_sector == 0:
 		return (a_scaled, b_scaled, 0.0)
 	elif third_sector == 1:
-		return (0.0, b_scaled, a_scaled)
+		return (0.0, a_scaled, b_scaled)
 	else:
 		# third_sector == 3
 		return (b_scaled, 0.0, a_scaled)
 
 for theta in numpy.linspace(0, 2 * math.pi, num=100, endpoint=False):
-	print(svpwm(theta, 1, 1))
 	print(svpwm_2(theta))
+	print(svpwm(theta, 1, 1))
