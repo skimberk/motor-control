@@ -63,6 +63,7 @@ static void MX_TIM1_Init(void);
 /* USER CODE BEGIN 0 */
 
 float theta = 0.0f;
+float thetaAdd = 0.0f;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float third_sector = floorf(theta / S_2_PI_3);
@@ -74,24 +75,28 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float a = SCALE_TO_ONE * (S_1_SQRT3 * y + x);
 	float b = SCALE_TO_ONE * (S_2_SQRT3 * y);
 
-	int a_time = a * 1000.0f;
-	int b_time = b * 1000.0f;
+	float multiplyBy = 200.0f;
+	int addTo = (2000.0f - multiplyBy) / 2.0f;
+
+	int a_time = a * multiplyBy;
+	int b_time = b * multiplyBy;
 
 	if (third_sector == 0) {
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, a_time);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, b_time);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, a_time + addTo);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, b_time + addTo);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, addTo);
 	} else if (third_sector == 1) {
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, b_time);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, addTo);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, a_time + addTo);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, b_time + addTo);
 	} else { // third_sector == 2
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, b_time);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, b_time + addTo);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, addTo);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time + addTo);
 	}
 
-	theta += 0.4f;
+	theta += thetaAdd;
+	thetaAdd += 0.00000005f;
 
 	if (theta >= 2.0f * M_PI) {
 		theta -= 2.0f * M_PI;
@@ -214,7 +219,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 1000;
+  htim1.Init.Period = 2000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
