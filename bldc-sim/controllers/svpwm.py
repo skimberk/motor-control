@@ -53,10 +53,14 @@ class SVPWMController(object):
 		self.estimated_ia = 0
 		self.integral_a = 0
 
+		self.filtered_ia = 0
+		self.filtered_ib = 0
+		self.filtered_ic = 0
+
 		self.current_angle = 0
 		self.theta = 0
 
-		self.multiplier = 1.0
+		self.multiplier = 2
 
 	def step_sim(self, dt, elapsed, epoch, throttle, variables):
 		theta = variables['theta']
@@ -73,8 +77,8 @@ class SVPWMController(object):
 		percent_on = 0.8
 		timer = epoch % period
 
-		svpwm_theta = theta + 3 * math.pi / 2
-		# svpwm_theta = self.multiplier * epoch / 1000.0
+		# svpwm_theta = theta + math.pi / 2
+		svpwm_theta = self.multiplier * epoch / 1000.0
 		# self.multiplier += 0.00001
 
 		if timer == 0:
@@ -98,8 +102,12 @@ class SVPWMController(object):
 		if self.pulsec <= timer:
 			self.vc = -v
 
-		if timer == period - 1 and self.pulsea < period - 1:
-			clarke_transformed = clarke(ia, ib, ic)
+		if timer == 0:
+			self.filtered_ia += 0.25 * (ia - self.filtered_ia)
+			self.filtered_ib += 0.25 * (ib - self.filtered_ib)
+			self.filtered_ic += 0.25 * (ic - self.filtered_ic)
+
+			clarke_transformed = clarke(self.filtered_ia, self.filtered_ib, self.filtered_ic)
 			self.current_angle = math.pi - math.atan2(clarke_transformed[0], clarke_transformed[1])
 			self.measured_ia = ia
 			self.estimated_bemfa = -ia - 1.8 * v
@@ -121,7 +129,7 @@ class SVPWMController(object):
 		return self.va, self.vb, self.vc
 
 	def get_variables(self):
-		return [0, self.current_angle, self.vb, self.measured_ia, self.estimated_bemfa, 0]
+		return [0, self.current_angle, self.vb, self.filtered_ia, self.estimated_bemfa, 0]
 
 	def get_errors(self):
 		return [0, 0]
