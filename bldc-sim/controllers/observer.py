@@ -38,6 +38,10 @@ def clarke(a, b, c):
 		1/2 * a + 1/2 * b + 1/2 * c
 	)
 
+# Got constants from simconstants.py
+R = (3 / 2) * 0.52
+L = (3 / 2) * 0.000036
+
 class SVPWMController(object):
 	def __init__(self):
 		self.va = 0
@@ -83,11 +87,11 @@ class SVPWMController(object):
 				self.vc = v
 
 		if self.pulsea <= timer:
-			self.va = -v
+			self.va = 0
 		if self.pulseb <= timer:
-			self.vb = -v
+			self.vb = 0
 		if self.pulsec <= timer:
-			self.vc = -v
+			self.vc = 0
 
 		return self.va, self.vb, self.vc
 
