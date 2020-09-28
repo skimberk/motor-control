@@ -1,4 +1,7 @@
 import math
+import numpy as np
+
+sqrt3 = math.sqrt(3)
 
 def normalize_angle(theta):
 	return theta - 2 * math.pi * math.floor(theta / (2 * math.pi))
@@ -29,18 +32,39 @@ def svpwm_2(theta):
 		# third_sector == 3
 		return (b_scaled, 0.0, a_scaled)
 
-def clarke(a, b, c):
-	sqrt3 = math.sqrt(3)
-
+def clarke_old(a, b, c):
 	return (
 		1 * a - 1/2 * b - 1/2 * c,
 		0 * a + sqrt3/2 * b - sqrt3/2 * c,
 		1/2 * a + 1/2 * b + 1/2 * c
 	)
 
+clarke = 2/3 * np.array([[1, -1/2, -1/2],
+						 [0, sqrt3/2, sqrt3/2],
+						 [1/2, 1/2, 1/2]])
+
 # Got constants from simconstants.py
 R = (3 / 2) * 0.52
 L = (3 / 2) * 0.000036
+
+psi = 0.0137 # Flux linkage ???? not sure, so I just put the bemf constant
+gamma = 1.0 # Observer gain
+
+def xdot(x, i, v):
+	y = -R*i + v
+	n = x - L*i
+	return y + gamma/2 * n * (np.square(psi) - (np.square(n[0]) + np.square(n[1])))
+
+def theta_from_x_i(x, i):
+	return np.arctan2(x[1] - L*i[1], x[0] - L*i[0])
+
+x = np.array([1.0, 2.0])
+i = np.array([1.0, 1.0])
+v = np.array([1.0, 1.0])
+
+for j in range(100):
+	x += 0.01 * xdot(x, i, v)
+	print(x, theta_from_x_i(x, i))
 
 class SVPWMController(object):
 	def __init__(self):
