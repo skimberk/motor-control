@@ -16,7 +16,7 @@ def _lambdifygenerated(m_r, m_w, g, l, r, tau, thetar, thetardot, thetaw, thetaw
 
 l = 3
 r = 0.5
-g = 1
+g = 10
 m_r = 10
 m_w = 1
 tau = 0
@@ -50,15 +50,15 @@ circle = plt.Circle((0, r), r, fill=False)
 rotation_indicator, = plt.plot([0, r], [r, r])
 rod, = plt.plot([0, 0], [r, r + l])
 
-last_error = np.pi - state[0]
+last_error = np.pi - state[0] # + 0.01 * (state[1])
 
 def animate(i):
 	global state
 	global tau
 	global last_error
 
-	error = np.pi - state[0]
-	tau = 100 * error + 20 * (error - last_error) / 0.05
+	error = np.pi - state[0] # + 0.01 * (state[1])
+	tau = 300 * error + 50 * (error - last_error) / 0.05
 	last_error = error
 
 	state = rk4(model, state, 0.05)
