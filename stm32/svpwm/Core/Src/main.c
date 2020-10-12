@@ -75,7 +75,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float a = SCALE_TO_ONE * (S_1_SQRT3 * y + x);
 	float b = SCALE_TO_ONE * (S_2_SQRT3 * y);
 
-	float multiplyBy = 200.0f;
+	float multiplyBy = 200.0f * (1.0f + 12.5f * thetaAdd);
 	int addTo = (2000.0f - multiplyBy) / 2.0f;
 
 	int a_time = a * multiplyBy;
@@ -96,7 +96,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	}
 
 	theta += thetaAdd;
-	thetaAdd += 0.00000005f;
+	thetaAdd += 0.0000002f;
 
 	if (theta >= 2.0f * M_PI) {
 		theta -= 2.0f * M_PI;

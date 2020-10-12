@@ -64,13 +64,17 @@ v = np.array([1.0, 1.0])
 
 for j in range(100):
 	x += 0.01 * xdot(x, i, v)
-	print(x, theta_from_x_i(x, i))
+	# print(x, theta_from_x_i(x, i))
 
 class SVPWMController(object):
 	def __init__(self):
 		self.va = 0
 		self.vb = 0
 		self.vc = 0
+
+		self.ia = 0
+		self.ib = 0
+		self.ic = 0
 
 		self.pulsea = 0
 		self.pulseb = 0
@@ -117,10 +121,28 @@ class SVPWMController(object):
 		if self.pulsec <= timer:
 			self.vc = 0
 
+		if timer == int(math.floor(self.pulsea)):
+			self.ia = ia
+
+			if self.va < 0.055:
+				self.ia -= self.ib + self.ic
+
+		if timer == int(math.floor(self.pulseb)):
+			self.ib = ib
+
+			if self.vb < 0.005:
+				self.ib -= self.ia + self.ic
+
+		if timer == int(math.floor(self.pulsec)):
+			self.ic = ic
+
+			if self.vc < 0.005:
+				self.ic -= self.ia + self.ib
+
 		return self.va, self.vb, self.vc
 
 	def get_variables(self):
-		return [0, 0, 0, 0, 0, 0]
+		return [0, 0, 0, self.ia, 0, 0]
 
 	def get_errors(self):
 		return [0, 0]
