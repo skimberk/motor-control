@@ -38,13 +38,37 @@ circle = plt.Circle((0, r), r, fill=False)
 rotation_indicator, = plt.plot([0, r], [r, r])
 rod, = plt.plot([0, 0], [r, r + l])
 
-K = np.array([[-146.7957, -3.1623, -55.7160, -6.2080]])
+# K = np.array([[-146.7957, -3.1623, -55.7160, -6.2080]])
+# K = np.array([[-196.9103, -7.0711, -87.3468, -11.2638]])
+K = np.array([[-234.5106, -10.0000, -110.3586, -14.9501]])
+
+move = None
+offset = 0
+
+def press(event):
+	global move
+	if event.key in ['left', 'right']:
+		move = event.key
+
+def release(event):
+	global move
+	if event.key in ['left', 'right']:
+		move = None
 
 def animate(i):
 	global state
 	global tau
+	global offset
 
-	tau = -(K @ state)[0]
+	fake_state = state.copy()
+	fake_state[1] -= offset
+
+	if move == 'left':
+		offset -= 0.2
+	elif move == 'right':
+		offset += 0.2
+
+	tau = -(K @ fake_state)[0]
 
 	for i in range(10):
 		state = rk4(model, state, 0.002)
@@ -55,6 +79,9 @@ def animate(i):
 	return [circle, rotation_indicator, rod]
 
 anim = matplotlib.animation.FuncAnimation(figure, animate, interval=20)
+
+figure.canvas.mpl_connect('key_press_event', press)
+figure.canvas.mpl_connect('key_release_event', release)
 
 axes.add_artist(circle)
 plt.title('Rod on Wheel')
