@@ -42,7 +42,7 @@ def rk4(f, x, h):
 
 	return x + h * (k1 + 2*k2 + 2*k3 + k4) / 6
 
-state = np.array([3, 0, 0, 0])
+state = np.array([2.5, -15, 0, 0])
 
 figure, axes = plt.subplots()
 
@@ -50,9 +50,18 @@ circle = plt.Circle((0, r), r, fill=False)
 rotation_indicator, = plt.plot([0, r], [r, r])
 rod, = plt.plot([0, 0], [r, r + l])
 
+last_error = np.pi - state[0]
+
 def animate(i):
 	global state
-	state = rk4(model, state, 0.01)
+	global tau
+	global last_error
+
+	error = np.pi - state[0]
+	tau = 100 * error + 20 * (error - last_error) / 0.05
+	last_error = error
+
+	state = rk4(model, state, 0.05)
 
 	circle.center = [r * state[1], r]
 	rotation_indicator.set_data([r * state[1], r * state[1] + r * np.cos(-state[1])], [r, r + r * np.sin(-state[1])])
