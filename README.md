@@ -6,7 +6,7 @@ At first I was getting an error `failed to start gdb server`. I unplugged and re
 
 ### Magical bug?
 
-I've been working to add an encoder to my cheap brushless motor by gluing a magnet to the back of the shaft and placing a magnetic encoder (an AS5600 supported by popiscle sticks) above it. I had the AS5600 hooked up to the oscilloscope, and noticed that at certain angles of the motor, there was some (big!) noise. However, it seemed to only appear when I was touching the motor. The noise (well, maybe not noise after all) was exactly 60Hz.
+I've been working to add an encoder to my cheap brushless motor by gluing a magnet to the back of the shaft and placing a magnetic encoder (an AS5600 supported by popsicle sticks) above it. I had the AS5600 hooked up to the oscilloscope, and noticed that at certain angles of the motor, there was some (big!) noise. However, it seemed to only appear when I was touching the motor. The noise (well, maybe not noise after all) was exactly 60Hz.
 
 After a bit more experimentation, I realized that my foot was on an extension cord cable, and when I moved my foot away, the noise disappeared. If I put my foot back on the cable, the noise reappeared. Weird, but I don't know enough about electronics to really be able to debug it, so I decided to fix the issue by just not putting my foot on the extension cable any more.
 
