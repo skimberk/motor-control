@@ -30,7 +30,7 @@ def rk4(f, x, h):
 
 	return x + h * (k1 + 2*k2 + 2*k3 + k4) / 6
 
-state = np.array([0.5, 0, 0, 0])
+state = np.array([0.2, 0, 0, 0])
 
 figure, axes = plt.subplots()
 
@@ -44,6 +44,7 @@ K = np.array([[-234.5106, -10.0000, -110.3586, -14.9501]])
 
 move = None
 offset = 0
+velocity = 0.2
 
 def press(event):
 	global move
@@ -52,21 +53,26 @@ def press(event):
 
 def release(event):
 	global move
+	global velocity
 	if event.key in ['left', 'right']:
 		move = None
+		velocity = 0.2
 
 def animate(i):
 	global state
 	global tau
 	global offset
+	global velocity
 
 	fake_state = state.copy()
 	fake_state[1] -= offset
 
 	if move == 'left':
-		offset -= 0.2
+		offset -= velocity
+		velocity += 0.001
 	elif move == 'right':
-		offset += 0.2
+		offset += velocity
+		velocity += 0.001
 
 	tau = -(K @ fake_state)[0]
 
@@ -85,7 +91,7 @@ figure.canvas.mpl_connect('key_release_event', release)
 
 axes.add_artist(circle)
 plt.title('Rod on Wheel')
-plt.xlim(-10, 10)
+plt.xlim(-15, 15)
 plt.ylim(-5, 5)
 axes.set_aspect(1)
 
