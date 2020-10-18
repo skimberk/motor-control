@@ -68,6 +68,14 @@ static void MX_ADC1_Init(void);
 float theta = 0.0f;
 float thetaAdd = 0.0f;
 
+unsigned int analogRead = 10;
+unsigned int startPosition = 0;
+unsigned int endPosition = 0;
+
+unsigned int electricOffset = 10;
+unsigned int electricRange = 585;
+unsigned int electricAngle = 0;
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float third_sector = floorf(theta / S_2_PI_3);
 	float third_sector_theta = theta - third_sector * S_2_PI_3;
@@ -79,7 +87,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float b = SCALE_TO_ONE * (S_2_SQRT3 * y);
 
 	float multiplyBy = 200.0f * (1.0f + 12.5f * thetaAdd);
-	int addTo = (2000.0f - multiplyBy) / 2.0f;
+	int addTo = (5000.0f - multiplyBy) / 2.0f;
 
 	int a_time = a * multiplyBy;
 	int b_time = b * multiplyBy;
@@ -98,12 +106,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time + addTo);
 	}
 
-	theta += thetaAdd;
-	thetaAdd += 0.0000002f;
-
-	if (theta >= 2.0f * M_PI) {
-		theta -= 2.0f * M_PI;
-	}
+//	theta += thetaAdd;
+//	thetaAdd += 0.0000002f;
+//
+//	if (theta >= 2.0f * M_PI) {
+//		theta -= 2.0f * M_PI;
+//	}
 }
 
 /* USER CODE END 0 */
@@ -149,12 +157,64 @@ int main(void)
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+
+//  for (int i = 0; i < 100; i++) {
+//	  HAL_ADC_Start(&hadc1);
+//	  HAL_ADC_PollForConversion(&hadc1, 1000);
+//	  analogRead = HAL_ADC_GetValue(&hadc1);
+//	  HAL_ADC_Stop(&hadc1);
+//
+//	  theta = 0.0f;
+//
+//	  HAL_Delay(10);
+//  }
+//
+//  startPosition = analogRead;
+//
+//  for (int i = 0; i < 100; i++) {
+//	  HAL_ADC_Start(&hadc1);
+//	  HAL_ADC_PollForConversion(&hadc1, 1000);
+//	  analogRead = HAL_ADC_GetValue(&hadc1);
+//	  HAL_ADC_Stop(&hadc1);
+//
+//	  theta += 2.0f * M_PI / 100.0f;
+//
+//	  if (theta >= 2.0f * M_PI) {
+//	  	theta -= 2.0f * M_PI;
+//	  }
+//
+//	  HAL_Delay(10);
+//  }
+//
+//  endPosition = analogRead;
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  HAL_ADC_Start(&hadc1);
+	  HAL_ADC_PollForConversion(&hadc1, 1000);
+	  analogRead = HAL_ADC_GetValue(&hadc1);
+	  HAL_ADC_Stop(&hadc1);
+
+	  if (electricOffset > analogRead) {
+		  electricAngle = electricRange - electricOffset + analogRead;
+	  } else {
+		  electricAngle = (analogRead - electricOffset) % electricRange;
+	  }
+
+	  theta = 2.0f * M_PI * ((electricAngle + 200) % electricRange) / (1.0f * electricRange);
+
+//	  theta += 0.01;
+//
+//	  if (theta >= 2.0f * M_PI) {
+//		  theta -= 2.0f * M_PI;
+//	  }
+//
+//	  HAL_Delay(10);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -239,7 +299,7 @@ static void MX_ADC1_Init(void)
   }
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -275,7 +335,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 1000;
+  htim1.Init.Period = 5000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
