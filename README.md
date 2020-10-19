@@ -14,11 +14,11 @@ After a lot of flailing (and thinking that maybe my version of STM32CubeIDE was 
 
 2. Solder a length of magnet wire (just thin copper wire with enamel insulation) onto pin 31 (AKA `PA10`) of the chip inside the ST-Link. See tutorial for more info: https://lujji.github.io/blog/stlink-clone-trace/ The chip in my ST-Link is a CKS32F103C8T6, which appears to be a clone of the original STM32F103C8T6. It worked for me, though, so having a cloned chip wasn't a problem.
 
-3. Solder a piece of 22 gauge solid copper wire onto the end of the magnet wire for breadboarding, then put the metal case back onto the ST-Link.
+3. Solder a piece of 22 gauge solid copper wire onto the end of the magnet wire for breadboarding, then put the metal case back onto the ST-Link. I also superglued the magnet wire onto the PCB to (hopefully) prevent it from getting pulled off the trace and cut a little groove into the plastic pin holder thing (?) for the magnet wire to pass through when the case is back on.
 
 4. Enable SWV in STM32CubeIDE. Open the `Debug Configuations...` under the Debug icon (the weird little insect/tick looking thing). In the `Debugger` tab, enable `Serial Wire Viewer (SWV)` and make sure the `Core Clock` is set to your system clock (which you can find in STM32CubeIDE under `SYSCLK`). 
 
-5. In the Debugger perspective, click on `Window -> Show View -> SWV -> SWV Data Trace` (and `SWV Data Trace Timeline Graph`) to be able to view thw SWV output.
+5. In the Debugger perspective, click on `Window -> Show View -> SWV -> SWV Data Trace` (and `SWV Data Trace Timeline Graph`) to be able to view the SWV output.
 
 6. Enable the `SYS_JTDO-TRACESWO` pin on your microcontroller (on my STM32F103C8 this was on pin `PB3`) and set the `Debug` method under `SYS` (which is itself under `System Core` in STM32CubeMX) to `Trace Asynchronous Sw`.
 
