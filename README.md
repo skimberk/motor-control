@@ -4,6 +4,44 @@ Fixed `Could not determine GDB version using command` error in STM32CubeIDE by i
 
 At first I was getting an error `failed to start gdb server`. I unplugged and replugged the ST-Link while in STM32CubeIDE and was prompted to upgrade the firmware. I upgraded the firmware and it started working.
 
+### Getting SWV Trace to work with ST-Link V2 chinese clone
+
+Summary: I had to solder a piece of magnet wire to one of the pins on the chip of the ST-Link so that I could connect it to the `TRACESWO` pin on my STM32F103 Blue Pill. Here's the tutorial I (more or less) followed: https://lujji.github.io/blog/stlink-clone-trace/
+
+After a lot of flailing (and thinking that maybe my version of STM32CubeIDE was just broken), I finally got SWV Trace working. It turns out that it requires having a pin on the ST-Link connected to the SWO pin on the STM32. For some reason, though, this pin isn't one of the pins that's normally accessible on the chinese ST-Link clones, so I had to solder on a piece of magnet wire. It works now!
+
+1. Take apart the ST-Link. I found that if I held the metal case and pushed on the USB connector, the PCB (which is attached to the USB connector) popped out pretty easily.
+
+2. Solder a length of magnet wire (just thin copper wire with enamel insulation) onto pin 21 of the chip inside the ST-Link. The chip in my ST-Link is a CKS32F103C8T6, which appears to be a clone of the original STM32F103C8T6. It worked for me, though, so having a cloned chip wasn't a problem.
+
+3. Solder a piece of 22 gauge solid copper wire onto the end of the magnet wire for breadboarding, then put the metal case back onto the ST-Link.
+
+4. Enable SWV in STM32CubeIDE. Open the `Debug Configuations...` under the Debug icon (the weird little insect/tick looking thing). In the `Debugger` tab, enable `Serial Wire Viewer (SWV)` and make sure the `Core Clock` is set to your system clock (which you can find in STM32CubeIDE under `SYSCLK`). 
+
+5. In the Debugger perspective, click on `Window -> Show View -> SWV -> SWV Data Trace` (and `SWV Data Trace Timeline Graph`) to be able to view thw SWV output.
+
+6. Enable the `SYS_JTDO-TRACESWO` pin on your microcontroller (on my STM32F103C8 this was on pin `PB3`) and set the `Debug` method under `SYS` (which is itself under `System Core` in STM32CubeMX) to `Trace Asynchronous Sw`.
+
+7. Run the generated code (in debug mode, by pressing the little bug icon) on your microcontroller. Make sure the `TRACESWO` on your microntroller (`PB3` in my case) is connected to the new pin you soldered onto your ST-Link. While the debugger is paused on the first breakpoint (I wasn't able to get this working otherwise) bring up the SWV settings by clicking on the wrench icon under the `SWV Data Trace` tab. Under `ITM Stimulus Ports`, enable pin 0. Start tracing by clicking the red circle.
+
+Some of these steps might not be necessary, but it's what I ended up doing to get SWV working. I also redirected `printf` output to the `SWV Data Trace` console by adding the following code to my `main.c`:
+
+```
+// Just make sure stdio.h is included
+#include "stdio.h"
+
+// ... some other code in between
+
+int _write(int32_t file, uint8_t *ptr, int32_t len) {
+	/* Implement your write code here, this is used by puts and printf for example */
+	int i = 0;
+	for(i=0; i < len; i++) {
+		ITM_SendChar((*ptr++));
+	}
+	return len;
+}
+```
+
 ### Magical bug?
 
 I've been working to add an encoder to my cheap brushless motor by gluing a magnet to the back of the shaft and placing a magnetic encoder (an AS5600 supported by popsicle sticks) above it. I had the AS5600 hooked up to the oscilloscope, and noticed that at certain angles of the motor, there was some (big!) noise. However, it seemed to only appear when I was touching the motor. The noise (well, maybe not noise after all) was exactly 60Hz.
