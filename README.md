@@ -12,7 +12,7 @@ After a lot of flailing (and thinking that maybe my version of STM32CubeIDE was 
 
 1. Take apart the ST-Link. I found that if I held the metal case and pushed on the USB connector, the PCB (which is attached to the USB connector) popped out pretty easily.
 
-2. Solder a length of magnet wire (just thin copper wire with enamel insulation) onto pin 21 of the chip inside the ST-Link. The chip in my ST-Link is a CKS32F103C8T6, which appears to be a clone of the original STM32F103C8T6. It worked for me, though, so having a cloned chip wasn't a problem.
+2. Solder a length of magnet wire (just thin copper wire with enamel insulation) onto pin 31 (AKA `PA10`) of the chip inside the ST-Link. See tutorial for more info: https://lujji.github.io/blog/stlink-clone-trace/ The chip in my ST-Link is a CKS32F103C8T6, which appears to be a clone of the original STM32F103C8T6. It worked for me, though, so having a cloned chip wasn't a problem.
 
 3. Solder a piece of 22 gauge solid copper wire onto the end of the magnet wire for breadboarding, then put the metal case back onto the ST-Link.
 
