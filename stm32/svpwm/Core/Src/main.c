@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "math.h"
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,6 +68,15 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+int _write(int32_t file, uint8_t *ptr, int32_t len) {
+	/* Implement your write code here, this is used by puts and printf for example */
+	int i = 0;
+	for(i=0; i < len; i++) {
+		ITM_SendChar((*ptr++));
+	}
+	return len;
+}
 
 float theta = 0.0f;
 float thetaAdd = 0.0f;
@@ -151,16 +161,16 @@ int main(void)
   MX_ADC1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
-
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
-
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
-
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+//  __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
+//
+//  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+//  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+//
+//  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+//  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+//
+//  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+//  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
 //  for (int i = 0; i < 100; i++) {
 //	  HAL_ADC_Start(&hadc1);
@@ -211,6 +221,8 @@ int main(void)
 	  }
 
 	  theta = 2.0f * M_PI * ((electricAngle + 200) % electricRange) / (1.0f * electricRange);
+
+	  printf("test\n");
 
 //	  theta += 0.01;
 //
