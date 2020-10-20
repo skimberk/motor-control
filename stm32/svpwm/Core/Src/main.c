@@ -103,7 +103,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float a = SCALE_TO_ONE * (S_1_SQRT3 * y + x);
 	float b = SCALE_TO_ONE * (S_2_SQRT3 * y);
 
-	float multiplyBy = 200.0f * (1.0f + 12.5f * thetaAdd);
+	float multiplyBy = 500.0f * (1.0f + 12.5f * thetaAdd);
 	int addTo = (5000.0f - multiplyBy) / 2.0f;
 
 	int a_time = a * multiplyBy;
@@ -123,12 +123,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time + addTo);
 	}
 
-//	theta += thetaAdd;
-//	thetaAdd += 0.0000002f;
-//
-//	if (theta >= 2.0f * M_PI) {
-//		theta -= 2.0f * M_PI;
-//	}
+	theta += thetaAdd;
+	thetaAdd += 0.0000002f;
+
+	if (theta >= 2.0f * M_PI) {
+		theta -= 2.0f * M_PI;
+	}
 }
 
 /* USER CODE END 0 */
@@ -165,16 +165,16 @@ int main(void)
   MX_ADC1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-//  __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
-//
-//  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-//  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
-//
-//  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-//  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
-//
-//  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-//  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+  __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
+
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
 //  for (int i = 0; i < 100; i++) {
 //	  HAL_ADC_Start(&hadc1);
@@ -216,36 +216,36 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_ADC_Start(&hadc1);
-	  HAL_ADC_PollForConversion(&hadc1, 1000);
-	  analogRead = HAL_ADC_GetValue(&hadc1);
-	  HAL_ADC_Stop(&hadc1);
-
-	  if (electricOffset > analogRead) {
-		  electricAngle = electricRange - electricOffset + analogRead;
-	  } else {
-		  electricAngle = (analogRead - electricOffset) % electricRange;
-	  }
-
-	  theta = 2.0f * M_PI * ((electricAngle + 200) % electricRange) / (1.0f * electricRange);
-
-	  buf[0] = RAW_ANGLE_REG;
-	  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
-	  if (ret == HAL_BUSY) {
-		  printf("Busy Tx\n");
-	  } else if (ret == HAL_ERROR) {
-		  printf("Error Tx\n");
-	  } else {
-		  // Read 2 bytes from the temperature register
-		  ret = HAL_I2C_Master_Receive(&hi2c1, AS5600_ADDR, buf, 2, 1000);
-		  if (ret != HAL_OK) {
-			  printf("Error Rx\n");
-		  } else {
-			  printf("Read I2C\n");
-		  }
-	  }
-
-	  HAL_Delay(250);
+//	  HAL_ADC_Start(&hadc1);
+//	  HAL_ADC_PollForConversion(&hadc1, 1000);
+//	  analogRead = HAL_ADC_GetValue(&hadc1);
+//	  HAL_ADC_Stop(&hadc1);
+//
+//	  if (electricOffset > analogRead) {
+//		  electricAngle = electricRange - electricOffset + analogRead;
+//	  } else {
+//		  electricAngle = (analogRead - electricOffset) % electricRange;
+//	  }
+//
+//	  theta = 2.0f * M_PI * ((electricAngle + 200) % electricRange) / (1.0f * electricRange);
+//
+//	  buf[0] = RAW_ANGLE_REG;
+//	  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
+//	  if (ret == HAL_BUSY) {
+//		  printf("Busy Tx\n");
+//	  } else if (ret == HAL_ERROR) {
+//		  printf("Error Tx\n");
+//	  } else {
+//		  // Read 2 bytes from the temperature register
+//		  ret = HAL_I2C_Master_Receive(&hi2c1, AS5600_ADDR, buf, 2, 1000);
+//		  if (ret != HAL_OK) {
+//			  printf("Error Rx\n");
+//		  } else {
+//			  printf("Read I2C %u %u %u\n", buf[0], buf[1], (((uint16_t) buf[0]) << 8) + buf[1]);
+//		  }
+//	  }
+//
+//	  HAL_Delay(250);
 
 //	  theta += 0.01;
 //
@@ -408,7 +408,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 1000;
+  htim1.Init.Period = 5000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
