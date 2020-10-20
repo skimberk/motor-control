@@ -49,6 +49,10 @@ TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
 
+// I2C Values for AS5600
+static const uint8_t AS5600_ADDR = 0x36 << 1; // Use 8-bit address
+static const uint8_t RAW_ANGLE_REG = 0x0C;
+
 static const float S_2_PI_3 = 2.0f * M_PI / 3.0f;
 static const float S_1_SQRT3 = 1.0f / sqrtf(3.0f);
 static const float S_2_SQRT3 = 2.0f / sqrtf(3.0f);
@@ -202,6 +206,9 @@ int main(void)
 //
 //  endPosition = analogRead;
 
+  HAL_StatusTypeDef ret;
+  uint8_t buf[12];
+
 
   /* USER CODE END 2 */
 
@@ -222,7 +229,23 @@ int main(void)
 
 	  theta = 2.0f * M_PI * ((electricAngle + 200) % electricRange) / (1.0f * electricRange);
 
-	  printf("test\n");
+	  buf[0] = RAW_ANGLE_REG;
+	  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
+	  if (ret == HAL_BUSY) {
+		  printf("Busy Tx\n");
+	  } else if (ret == HAL_ERROR) {
+		  printf("Error Tx\n");
+	  } else {
+		  // Read 2 bytes from the temperature register
+		  ret = HAL_I2C_Master_Receive(&hi2c1, AS5600_ADDR, buf, 2, 1000);
+		  if (ret != HAL_OK) {
+			  printf("Error Rx\n");
+		  } else {
+			  printf("Read I2C\n");
+		  }
+	  }
+
+	  HAL_Delay(250);
 
 //	  theta += 0.01;
 //

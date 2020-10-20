@@ -42,6 +42,10 @@ int _write(int32_t file, uint8_t *ptr, int32_t len) {
 }
 ```
 
+### Getting I2C working (just use pullup resistors)
+
+I was having difficulties getting I2C to work on my STM32 (using STM32CubeIDE and STM32CubeMX). `HAL_I2C_Master_Transmit` would always either return `HAL_BUSY` or `HAL_ERROR`. When I connected my oscilloscope to `SCL` it would always return `HAL_BUSY`, whereas when it wasn't connected to anything it would return `HAL_ERROR`. This, along with the fact that the pin appeared to always be low on the oscilloscope, was a little suspicious. I added some 2.2K pullup resistors to both `SCL` and `SDA` and now it's working fine!
+
 ### Magical bug?
 
 I've been working to add an encoder to my cheap brushless motor by gluing a magnet to the back of the shaft and placing a magnetic encoder (an AS5600 supported by popsicle sticks) above it. I had the AS5600 hooked up to the oscilloscope, and noticed that at certain angles of the motor, there was some (big!) noise. However, it seemed to only appear when I was touching the motor. The noise (well, maybe not noise after all) was exactly 60Hz.
