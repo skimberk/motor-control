@@ -85,13 +85,13 @@ int _write(int32_t file, uint8_t *ptr, int32_t len) {
 float theta = 0.0f;
 float thetaAdd = 0.0f;
 
-unsigned int analogRead = 10;
-unsigned int startPosition = 0;
-unsigned int endPosition = 0;
+uint16_t lastRawAngle = 0;
+int desiredVelocity = 40;
+int velocity = 0;
 
-unsigned int electricOffset = 10;
-unsigned int electricRange = 585;
-unsigned int electricAngle = 0;
+uint16_t electricOffset = 35;
+uint16_t electricRange = 585;
+uint16_t electricAngle = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float third_sector = floorf(theta / S_2_PI_3);
@@ -103,7 +103,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float a = SCALE_TO_ONE * (S_1_SQRT3 * y + x);
 	float b = SCALE_TO_ONE * (S_2_SQRT3 * y);
 
-	float multiplyBy = 500.0f * (1.0f + 12.5f * thetaAdd);
+	float p = 20.0f * (desiredVelocity - velocity);
+
+	if (p < 0.0f) {
+		p = 0.0f;
+	}
+
+	float multiplyBy = (150.0f + p) * (1.0f + 12.5f * thetaAdd);
 	int addTo = (5000.0f - multiplyBy) / 2.0f;
 
 	int a_time = a * multiplyBy;
@@ -123,12 +129,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time + addTo);
 	}
 
-	theta += thetaAdd;
-	thetaAdd += 0.0000002f;
-
-	if (theta >= 2.0f * M_PI) {
-		theta -= 2.0f * M_PI;
-	}
+//	theta += thetaAdd;
+//	thetaAdd += 0.0000002f;
+//
+//	if (theta >= 2.0f * M_PI) {
+//		theta -= 2.0f * M_PI;
+//	}
 }
 
 /* USER CODE END 0 */
@@ -176,36 +182,6 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
-//  for (int i = 0; i < 100; i++) {
-//	  HAL_ADC_Start(&hadc1);
-//	  HAL_ADC_PollForConversion(&hadc1, 1000);
-//	  analogRead = HAL_ADC_GetValue(&hadc1);
-//	  HAL_ADC_Stop(&hadc1);
-//
-//	  theta = 0.0f;
-//
-//	  HAL_Delay(10);
-//  }
-//
-//  startPosition = analogRead;
-//
-//  for (int i = 0; i < 100; i++) {
-//	  HAL_ADC_Start(&hadc1);
-//	  HAL_ADC_PollForConversion(&hadc1, 1000);
-//	  analogRead = HAL_ADC_GetValue(&hadc1);
-//	  HAL_ADC_Stop(&hadc1);
-//
-//	  theta += 2.0f * M_PI / 100.0f;
-//
-//	  if (theta >= 2.0f * M_PI) {
-//	  	theta -= 2.0f * M_PI;
-//	  }
-//
-//	  HAL_Delay(10);
-//  }
-//
-//  endPosition = analogRead;
-
   HAL_StatusTypeDef ret;
   uint8_t buf[12];
 
@@ -216,35 +192,43 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  HAL_ADC_Start(&hadc1);
-//	  HAL_ADC_PollForConversion(&hadc1, 1000);
-//	  analogRead = HAL_ADC_GetValue(&hadc1);
-//	  HAL_ADC_Stop(&hadc1);
-//
-//	  if (electricOffset > analogRead) {
-//		  electricAngle = electricRange - electricOffset + analogRead;
-//	  } else {
-//		  electricAngle = (analogRead - electricOffset) % electricRange;
-//	  }
-//
-//	  theta = 2.0f * M_PI * ((electricAngle + 200) % electricRange) / (1.0f * electricRange);
-//
-//	  buf[0] = RAW_ANGLE_REG;
-//	  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
-//	  if (ret == HAL_BUSY) {
-//		  printf("Busy Tx\n");
-//	  } else if (ret == HAL_ERROR) {
-//		  printf("Error Tx\n");
-//	  } else {
-//		  // Read 2 bytes from the temperature register
-//		  ret = HAL_I2C_Master_Receive(&hi2c1, AS5600_ADDR, buf, 2, 1000);
-//		  if (ret != HAL_OK) {
-//			  printf("Error Rx\n");
-//		  } else {
-//			  printf("Read I2C %u %u %u\n", buf[0], buf[1], (((uint16_t) buf[0]) << 8) + buf[1]);
-//		  }
-//	  }
-//
+	  buf[0] = RAW_ANGLE_REG;
+	  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
+	  if (ret == HAL_BUSY) {
+		  printf("Busy Tx\n");
+	  } else if (ret == HAL_ERROR) {
+		  printf("Error Tx\n");
+	  } else {
+		  // Read 2 bytes from the temperature register
+		  ret = HAL_I2C_Master_Receive(&hi2c1, AS5600_ADDR, buf, 2, 1000);
+		  if (ret != HAL_OK) {
+			  printf("Error Rx\n");
+		  } else {
+			  uint16_t rawAngle = (((uint16_t) buf[0]) << 8) + buf[1];
+//			  printf("Read I2C %u\n", rawAngle);
+
+			  if (lastRawAngle > 3995 && rawAngle < 100) {
+				  velocity = 4095 - ((int)lastRawAngle) + ((int)rawAngle);
+			  } else {
+				  velocity = ((int)rawAngle) - ((int)lastRawAngle);
+			  }
+
+//			  printf("Velocity %d\n", velocity);
+
+			  lastRawAngle = rawAngle;
+
+			  if (electricOffset > rawAngle) {
+				  electricAngle = electricRange - electricOffset + rawAngle;
+			  } else {
+				  electricAngle = (rawAngle - electricOffset) % electricRange;
+			  }
+
+//			  printf("Electric angle %u\n", electricAngle);
+
+			  theta = 2.0f * M_PI * ((electricAngle + electricRange / 4) % electricRange) / (1.0f * electricRange);
+		  }
+	  }
+
 //	  HAL_Delay(250);
 
 //	  theta += 0.01;
