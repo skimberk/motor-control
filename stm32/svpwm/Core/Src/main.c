@@ -85,8 +85,9 @@ int _write(int32_t file, uint8_t *ptr, int32_t len) {
 float theta = 0.0f;
 float thetaAdd = 0.0f;
 
+uint16_t desiredRawAngle = 2000;
 uint16_t lastRawAngle = 0;
-int desiredVelocity = 40;
+int desiredVelocity = 0;
 int velocity = 0;
 
 uint16_t electricOffset = 35;
@@ -94,6 +95,19 @@ uint16_t electricRange = 585;
 uint16_t electricAngle = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
+	float p = 100.0f * (desiredVelocity - velocity);
+
+	if (desiredVelocity < 0) {
+		p = -p;
+	}
+
+	if (p < 0.0f) {
+		p = 0.0f;
+	}
+
+	float multiplyBy = (0.0f + p) * (1.0f + 12.5f * thetaAdd);
+	int addTo = (10000.0f - multiplyBy) / 2.0f;
+
 	float third_sector = floorf(theta / S_2_PI_3);
 	float third_sector_theta = theta - third_sector * S_2_PI_3;
 
@@ -102,15 +116,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 
 	float a = SCALE_TO_ONE * (S_1_SQRT3 * y + x);
 	float b = SCALE_TO_ONE * (S_2_SQRT3 * y);
-
-	float p = 20.0f * (desiredVelocity - velocity);
-
-	if (p < 0.0f) {
-		p = 0.0f;
-	}
-
-	float multiplyBy = (150.0f + p) * (1.0f + 12.5f * thetaAdd);
-	int addTo = (5000.0f - multiplyBy) / 2.0f;
 
 	int a_time = a * multiplyBy;
 	int b_time = b * multiplyBy;
@@ -185,6 +190,16 @@ int main(void)
   HAL_StatusTypeDef ret;
   uint8_t buf[12];
 
+  buf[0] = RAW_ANGLE_REG;
+  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
+  if (ret == HAL_BUSY) {
+	  printf("Busy Tx\n");
+  } else if (ret == HAL_ERROR) {
+	  printf("Error Tx\n");
+  } else {
+	  printf("Success Tx\n");
+  }
+
 
   /* USER CODE END 2 */
 
@@ -192,20 +207,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  buf[0] = RAW_ANGLE_REG;
-	  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
-	  if (ret == HAL_BUSY) {
-		  printf("Busy Tx\n");
-	  } else if (ret == HAL_ERROR) {
-		  printf("Error Tx\n");
-	  } else {
-		  // Read 2 bytes from the temperature register
 		  ret = HAL_I2C_Master_Receive(&hi2c1, AS5600_ADDR, buf, 2, 1000);
 		  if (ret != HAL_OK) {
 			  printf("Error Rx\n");
 		  } else {
 			  uint16_t rawAngle = (((uint16_t) buf[0]) << 8) + buf[1];
-//			  printf("Read I2C %u\n", rawAngle);
+			  printf("Read I2C %u\n", rawAngle);
 
 			  if (lastRawAngle > 3995 && rawAngle < 100) {
 				  velocity = 4095 - ((int)lastRawAngle) + ((int)rawAngle);
@@ -225,11 +232,22 @@ int main(void)
 
 //			  printf("Electric angle %u\n", electricAngle);
 
-			  theta = 2.0f * M_PI * ((electricAngle + electricRange / 4) % electricRange) / (1.0f * electricRange);
-		  }
-	  }
+			  desiredVelocity = ((int)desiredRawAngle - (int)rawAngle) / 5;
 
-//	  HAL_Delay(250);
+			  if (desiredVelocity > 20) {
+			  	desiredVelocity = 20;
+			  } else if (desiredVelocity < -20) {
+			  	desiredVelocity = -20;
+			  }
+
+			  if (desiredVelocity > 0) {
+				  theta = 2.0f * M_PI * ((electricAngle + electricRange / 4) % electricRange) / (1.0f * electricRange);
+			  } else {
+				  theta = 2.0f * M_PI * ((electricAngle + 3 * electricRange / 4) % electricRange) / (1.0f * electricRange);
+			  }
+		  }
+
+//	  HAL_Delay(1000);
 
 //	  theta += 0.01;
 //
@@ -264,7 +282,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL2;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -278,12 +296,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV2;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -392,7 +410,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 5000;
+  htim1.Init.Period = 10000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
