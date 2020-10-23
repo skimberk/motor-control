@@ -79,6 +79,8 @@ int _write(int32_t file, uint8_t *ptr, int32_t len) {
 	return len;
 }
 
+int modeSelect = 0;
+
 float theta = 0.0f;
 float thetaAdd = 0.0f;
 
@@ -92,18 +94,22 @@ uint16_t electricRange = 585;
 uint16_t electricAngle = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
-	float p = 100.0f * (desiredVelocity - velocity);
+	if (modeSelect == 0) {
+		float p = 0.0f;
+	} else if (modeSelect == 1) {
+		float p = 100.0f * (desiredVelocity - velocity);
 
-	if (desiredVelocity < 0) {
-		p = -p;
+		if (desiredVelocity < 0) {
+			p = -p;
+		}
+
+		if (p < 0.0f) {
+			p = 0.0f;
+		}
 	}
 
-	if (p < 0.0f) {
-		p = 0.0f;
-	}
-
-	float multiplyBy = (0.0f + p) * (1.0f + 12.5f * thetaAdd);
-	int addTo = (10000.0f - multiplyBy) / 2.0f;
+	float multiplyBy = (150.0f + p) * (1.0f + 12.5f * thetaAdd);
+	int addTo = (1000.0f - multiplyBy) / 2.0f;
 
 	float third_sector = floorf(theta / S_2_PI_3);
 	float third_sector_theta = theta - third_sector * S_2_PI_3;
@@ -131,12 +137,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time + addTo);
 	}
 
-//	theta += thetaAdd;
-//	thetaAdd += 0.0000002f;
-//
-//	if (theta >= 2.0f * M_PI) {
-//		theta -= 2.0f * M_PI;
-//	}
+	if (modeSelect == 0) {
+		theta += thetaAdd;
+		thetaAdd += 0.0000002f;
+
+		if (theta >= 2.0f * M_PI) {
+			theta -= 2.0f * M_PI;
+		}
+	}
 }
 
 /* USER CODE END 0 */
@@ -203,12 +211,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if (modeSelect == 1) {
 		  ret = HAL_I2C_Master_Receive(&hi2c1, AS5600_ADDR, buf, 2, 1000);
 		  if (ret != HAL_OK) {
 			  printf("Error Rx\n");
 		  } else {
 			  uint16_t rawAngle = (((uint16_t) buf[0]) << 8) + buf[1];
-			  printf("Read I2C %u\n", rawAngle);
+//			  printf("Read I2C %u\n", rawAngle);
 
 			  if (lastRawAngle > 3995 && rawAngle < 100) {
 				  velocity = 4095 - ((int)lastRawAngle) + ((int)rawAngle);
@@ -228,6 +237,7 @@ int main(void)
 
 //			  printf("Electric angle %u\n", electricAngle);
 
+//			  desiredVelocity = 20;
 			  desiredVelocity = ((int)desiredRawAngle - (int)rawAngle) / 5;
 
 			  if (desiredVelocity > 20) {
@@ -242,6 +252,7 @@ int main(void)
 				  theta = 2.0f * M_PI * ((electricAngle + 3 * electricRange / 4) % electricRange) / (1.0f * electricRange);
 			  }
 		  }
+	  }
 
 //	  HAL_Delay(1000);
 
@@ -313,7 +324,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -354,7 +365,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 10000;
+  htim1.Init.Period = 1000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
