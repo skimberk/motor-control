@@ -58,6 +58,7 @@ static const uint8_t RAW_ANGLE_REG = 0x0C;
 static const float S_2_PI_3 = 2.0f * M_PI / 3.0f;
 static const float S_1_SQRT3 = 1.0f / sqrtf(3.0f);
 static const float S_2_SQRT3 = 2.0f / sqrtf(3.0f);
+static const float S_SQRT3_2 = sqrt(3.0f) / 2.0f;
 static const float SCALE_TO_ONE = 1.0f / (1.0f / (2.0f * sqrtf(3.0f)) + sqrtf(3.0f) / 2.0f);
 
 /* USER CODE END PV */
@@ -88,7 +89,7 @@ int _write(int32_t file, uint8_t *ptr, int32_t len) {
 int modeSelect = 0;
 
 float theta = 0.0f;
-float thetaAdd = 0.0f;
+float thetaAdd = 0.00002f;
 
 uint16_t desiredRawAngle = 2000;
 uint16_t lastRawAngle = 0;
@@ -99,7 +100,66 @@ uint16_t electricOffset = 35;
 uint16_t electricRange = 585;
 uint16_t electricAngle = 0;
 
-uint32_t adcValues[3];
+uint32_t adcValues[2];
+
+int dutyCycle = 500;
+int period = 10000;
+
+// In V
+float V = 15.0f;
+
+// TODO: Make this so you don't need to update it
+float VConversionFactor = 15.0f * 150.0f / 10000.0f;
+
+// In V
+float Va = 0;
+float Vb = 0;
+float Vc = 0;
+
+float Valpha = 0;
+float Vbeta = 0;
+
+// For converting from ADC value to mA
+// ADC range is [0, 4095] which gets shifted
+// to [-2048, 2047] to account for negative current.
+// Current shunt resistance is 0.0005 ohms
+// and current amplifier gain is 100 with range [-1.65, 1.65] volts
+// So, V = 100 * 0.0005 * I
+// So I = V / (100 * 0.0005)
+// So for 1.65 volts, I = 1.65 / (100 * 0.0005) = 33 amps
+float IConversionFactor = 33.0f / 2048.0f;
+
+// In A
+float Ia = 0;
+float Ib = 0;
+float Ic = 0;
+
+float Ialpha = 0;
+float Ibeta = 0;
+
+// Sensorless stuff from this article:
+// http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
+
+float R = 0.034f; // TODO
+float L = 0.01f; // TODO
+float psi = 0.01f; // TODO
+
+float gamma_ = 1000.0f; // TODO
+
+float yAlpha = 0;
+float yBeta = 0;
+
+float etaAlpha = 0;
+float etaBeta = 0;
+
+float psiSquared = 0;
+float etaNormSquared = 0;
+
+float xAlpha = 0;
+float xBeta = 0;
+
+float xDotAlpha = 0;
+float xDotBeta = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 	float p;
@@ -117,8 +177,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 		}
 	}
 
-	float multiplyBy = (150.0f + p) * (1.0f + 12.5f * thetaAdd);
-	int addTo = (1000.0f - multiplyBy) / 2.0f;
+	float multiplyBy = ((float)dutyCycle + p) * (1.0f + 12.5f * thetaAdd);
+	int addTo = ((float)period - multiplyBy) / 2.0f;
 
 	float third_sector = floorf(theta / S_2_PI_3);
 	float third_sector_theta = theta - third_sector * S_2_PI_3;
@@ -136,19 +196,31 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim1_1) {
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, a_time + addTo);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, b_time + addTo);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, addTo);
+
+		Va = a * VConversionFactor;
+		Vb = b * VConversionFactor;
+		Vc = 0;
 	} else if (third_sector == 1) {
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, addTo);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, a_time + addTo);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, b_time + addTo);
+
+		Va = 0;
+		Vb = a * VConversionFactor;
+		Vc = b * VConversionFactor;
 	} else { // third_sector == 2
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, b_time + addTo);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, addTo);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, a_time + addTo);
+
+		Va = b * VConversionFactor;
+		Vb = 0;
+		Vc = a * VConversionFactor;
 	}
 
 	if (modeSelect == 0) {
 		theta += thetaAdd;
-		thetaAdd += 0.0000002f;
+//		thetaAdd += 0.0000002f;
 
 		if (theta >= 2.0f * M_PI) {
 			theta -= 2.0f * M_PI;
@@ -202,16 +274,9 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
-  printf("Test print 1\n");
-  printf("Test print 2\n");
-
-  if (HAL_ADC_Start_DMA(&hadc1, adcValues, 3) != HAL_OK) {
+  if (HAL_ADC_Start_DMA(&hadc1, adcValues, 2) != HAL_OK) {
 	  printf("Error ADC start\n");
   }
-
-  ITM_SendChar('4');
-
-  printf("Test print 3\n");
 
   HAL_StatusTypeDef ret;
   uint8_t buf[12];
@@ -278,9 +343,29 @@ int main(void)
 		  }
 	  }
 
-	  printf("%"PRIu32" %"PRIu32" %"PRIu32" \n", adcValues[0], adcValues[1], adcValues[2]);
+	  Ia = ((float)adcValues[0] - 4096 / 2) * IConversionFactor;
+	  Ib = ((float)adcValues[1] - 4096 / 2) * IConversionFactor;
+	  Ic = -(Ia + Ib);
 
-	  HAL_Delay(250);
+	  Ialpha = Ia - 0.5 * Ib - 0.5 * Ic;
+	  Ibeta = S_SQRT3_2 * Ib - S_SQRT3_2 * Ic;
+
+	  Valpha = Va - 0.5 * Vb - 0.5 * Vc;
+	  Vbeta = S_SQRT3_2 * Vb - S_SQRT3_2 * Vc;
+
+	  yAlpha = -R * Ialpha + Valpha;
+	  yBeta = -R * Ibeta + Vbeta;
+
+	  etaAlpha = xAlpha - L * Ialpha;
+	  etaBeta = xBeta - L * Ibeta;
+
+	  psiSquared = psi * psi;
+	  etaNormSquared = etaAlpha * etaAlpha + etaBeta * etaBeta;
+
+	  xDotAlpha = yAlpha + 0.5 * gamma_ * etaAlpha * (psiSquared - etaNormSquared);
+	  xDotBeta = yBeta + 0.5 * gamma_ * etaBeta * (psiSquared - etaNormSquared);
+
+//	  HAL_Delay(250);
 
 //	  theta += 0.01;
 //
@@ -366,7 +451,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 3;
+  hadc1.Init.NbrOfConversion = 2;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -375,7 +460,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_41CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -384,14 +469,6 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = ADC_REGULAR_RANK_2;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_3;
-  sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
