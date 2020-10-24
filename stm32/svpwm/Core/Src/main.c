@@ -202,22 +202,30 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
+  printf("Test print 1\n");
+  printf("Test print 2\n");
+
   if (HAL_ADC_Start_DMA(&hadc1, adcValues, 3) != HAL_OK) {
-	  printf("Error ADC start");
-	  return 1;
+	  printf("Error ADC start\n");
   }
+
+  ITM_SendChar('4');
+
+  printf("Test print 3\n");
 
   HAL_StatusTypeDef ret;
   uint8_t buf[12];
 
-  buf[0] = RAW_ANGLE_REG;
-  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
-  if (ret == HAL_BUSY) {
-	  printf("Busy Tx\n");
-  } else if (ret == HAL_ERROR) {
-	  printf("Error Tx\n");
-  } else {
-	  printf("Success Tx\n");
+  if (modeSelect == 1) {
+	  buf[0] = RAW_ANGLE_REG;
+	  ret = HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDR, buf, 1, 1000);
+	  if (ret == HAL_BUSY) {
+		  printf("Busy Tx\n");
+	  } else if (ret == HAL_ERROR) {
+		  printf("Error Tx\n");
+	  } else {
+		  printf("Success Tx\n");
+	  }
   }
 
 
@@ -270,7 +278,7 @@ int main(void)
 		  }
 	  }
 
-	  printf("%"PRIu32" %"PRIu32" %"PRIu32"\n", adcValues[0], adcValues[1], adcValues[2]);
+	  printf("%"PRIu32" %"PRIu32" %"PRIu32" \n", adcValues[0], adcValues[1], adcValues[2]);
 
 	  HAL_Delay(250);
 
@@ -365,17 +373,9 @@ static void MX_ADC1_Init(void)
   }
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Regular Channel
-  */
   sConfig.Channel = ADC_CHANNEL_1;
-  sConfig.Rank = ADC_REGULAR_RANK_2;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -383,6 +383,14 @@ static void MX_ADC1_Init(void)
   /** Configure Regular Channel
   */
   sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = ADC_REGULAR_RANK_2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
